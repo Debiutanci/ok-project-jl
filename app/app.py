@@ -1,4 +1,6 @@
 MINUS_PATH = -10000000
+PATH_KEY = "path"
+LEN_KEY = "key"
 
 
 class Graph:
@@ -33,20 +35,19 @@ class Graph:
         for arr in data:
             self.adj[arr[0]].append(arr[1])
 
-    def topologicalSortUtil(self, v):
+    def topological_sort(self, v):
         self.visited[v] = True
         for i in self.adj[v]:
             if (not self.visited[i[0]]):
-                self.topologicalSortUtil(i[0])
+                self.topological_sort(i[0])
         self.stack.append(v)
 
-
-    def longestPath(self, s):
+    def longest_path(self, s):
         dist = [MINUS_PATH for _ in range(self.v)]
 
         for i in range(self.v):
             if self.visited[i] == False:
-                self.topologicalSortUtil(i)
+                self.topological_sort(i)
 
         dist[s] = 0
         while (len(self.stack) > 0):
@@ -68,11 +69,11 @@ class Graph:
                         self.max_lens[self.mapping_var[i[0]]] = path_before
 
         response = {}
-        for gk in self.gkeys:
-            response[gk] = {"len": dist[0], "path": self.max_lens[gk]}
+        for i, gk in enumerate(self.gkeys):
+            response[gk] = {LEN_KEY: dist[i], PATH_KEY: self.max_lens[gk]}
 
         for k, value in response.items():
-            value["path"].append(k)
+            value[PATH_KEY].append(k)
 
         self.__cached_response = response
         return response
@@ -83,7 +84,8 @@ class Graph:
 
 
 if __name__ == '__main__':
-    pass
+    raise Exception("---")
+
 
 def app():
     v = 6
@@ -103,5 +105,5 @@ def app():
     graph = Graph(v=v)
     graph.create(data=data)
     s = 0
-    _ = graph.longestPath(s=s)
+    _ = graph.longest_path(s=s)
     graph.display_longest_path_info()
