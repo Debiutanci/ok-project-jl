@@ -5,7 +5,7 @@ AUTHOR = "Jakub Lemiesiewicz 151922"
 
 
 def main():
-    print(f"Project: Longest path problem\n author: {AUTHOR}")
+    print(f"Project: Longest path problem\nauthor: {AUTHOR}")
     app()
 
 
