@@ -1,5 +1,4 @@
-from copy import copy
-from app.temp_graph import TempGraph
+from collections import defaultdict
 
 
 MINUS_PATH = -10000000
@@ -7,6 +6,36 @@ PATH_KEY = "path"
 LEN_KEY = "len"
 METHOD_LONGEST_LONGEST = "LONGEST_LONGEST"
 METHOD_ALL_LONGEST = "ALL_LONGEST"
+
+
+class TempGraph:
+
+    def __init__(self, v):
+        self.v = v
+        self.graph = defaultdict(list)
+        self.all_paths = []
+
+    def addEdge(self, u, v):
+        self.graph[u].append(v)
+
+    def print_all_paths_util(self, u, d, visited, path):
+        visited[u]= True
+        path.append(u)
+        if u == d:
+            print(path)
+            self.all_paths.append(list(path))
+        else:
+            for i in self.graph[u]:
+                if visited[i]== False:
+                    self.print_all_paths_util(i, d, visited, path)
+        path.pop()
+        visited[u]= False
+
+    def print_all_paths(self, s, t):
+        visited = [False]*(self.v)
+        path = []
+        self.print_all_paths_util(s, t, visited, path)
+        return self.all_paths
 
 
 class MainGraph:
@@ -20,8 +49,6 @@ class MainGraph:
             ascii_iter += 1
         return gkeys
 
-    
-
     def __init__(self, v) -> None:
         self.v = v
         self.gkeys = self.generate_keys(v)
@@ -32,6 +59,7 @@ class MainGraph:
         self.mapping_var = {}
         self.__set_max_lens_and_mapping_var()
         self.__cached_response = None
+        self._forced_response = None
         self.temp_graph_instance = TempGraph(v=v)
         self.data = None
 
@@ -101,18 +129,11 @@ class MainGraph:
         for item in self.__cached_response.items():
             print(item)
 
-    def reverse_mapping_var(self, value):
-        for k, v in self.mapping_var.items():
-            if v == value:
-                return k
-        raise Exception("...")
-
     def delete_vs(self, longest_to_forced):
         dup_data = []
-        longest_to_forced_ints = [self.reverse_mapping_var(v) for v in longest_to_forced]
 
         for arr in self.data:
-            if arr[0] in longest_to_forced_ints or arr[1][0] in longest_to_forced_ints:
+            if arr[0] in longest_to_forced or arr[1][0] in longest_to_forced:
                 pass
             else:
                 dup_data.append(arr)
@@ -120,7 +141,6 @@ class MainGraph:
 
     def _get_cached_response(self):
         return self.__cached_response
-
 
     """=============================================================="""
     def get_longest_path_from_response(self):
@@ -131,23 +151,60 @@ class MainGraph:
                 res = row[PATH_KEY]
         return res
 
+    def get_all_paths(self, s, f):
+        return self.temp_graph_instance.print_all_paths(s=s, t=f)
+
+    def __util(self, path_to_forced, f):
+        smaller_graph = self.delete_vs(path_to_forced)
+        inside_instance = MainGraph(self.v)
+        inside_instance.create(smaller_graph)
+        _ = inside_instance.longest_path(s=f)
+        second_longest = inside_instance.get_longest_path_from_response()
+        res = []
+        res.extend(path_to_forced)
+        res.extend(second_longest)
+        print(res)
+        self._forced_response = res
+        return res
+
+    def reverse_mapping_var(self, value):
+        for k, v in self.mapping_var.items():
+            if v == value:
+                return k
+        raise Exception("...")
+
+    def get_len_by_path(self, path):
+        reversed_path = [self.reverse_mapping_var(_) for _ in path]
+        l = 0
+        for rel in range(1, len(path), 1):
+            source = reversed_path[rel-1]
+            target = reversed_path[rel]
+            for row in self.data:
+                if source == row[0] and target == row[1][0]:
+                    l += row[1][1]
+        return l
+
+    def get_forced_response(self, options):
+        res = {}
+        for i, optional_path in enumerate(options):
+            res[i] = {PATH_KEY: optional_path, LEN_KEY: self.get_len_by_path(optional_path)}
+        return res
+
     def longest_path_with_forced(self, s, f, method):
         self.longest_path(s=s)
         if method == METHOD_ALL_LONGEST:
-            ...
+            options = []
+            for path_to_forced in self.get_all_paths(s=s, f=f):
+                path_to_forced.pop()
+                letters_path = [self.mapping_var[_] for _ in path_to_forced]
+                options.append(self.__util(letters_path, f))
+            return self.get_forced_response(options=options)
+
         elif method == METHOD_LONGEST_LONGEST:
             longest_to_forced = self.__cached_response[self.mapping_var[f]][PATH_KEY]
             longest_to_forced.pop()
-            smaller_graph = self.delete_vs(longest_to_forced)
-            inside_instance = MainGraph(self.v)
-            inside_instance.create(smaller_graph)
-            _ = inside_instance.longest_path(s=f)
-            second_longest = inside_instance.get_longest_path_from_response()
-            res = []
-            res.extend(longest_to_forced)
-            res.extend(second_longest)
-            print(res)
-            return res
+            path = self.__util(longest_to_forced, f)
+            return [path]
 
         else:
             raise Exception("Invalid method!")
@@ -172,16 +229,17 @@ class Alg:
             _ = self.main_graph.longest_path(s=self.configuration.s)
             self.main_graph.display_longest_path_info()
         else:
-            _ = self.main_graph.longest_path_with_forced(s=self.configuration.s, f=self.configuration.f, method=self.configuration.method)
-            # self.graph.display_longest_path_forced_info()
+            res = self.main_graph.longest_path_with_forced(s=self.configuration.s, f=self.configuration.f, method=self.configuration.method)
+            for obj in res.items():
+                print(obj)
 
 
 def app():
     v = 6
     s = 0
-    f = 4 #2
+    f = 2 #2
     forced_checker = True
-    method = "LONGEST_LONGEST"
+    method = "ALL_LONGEST" # "LONGEST_LONGEST" # "ALL_LONGEST"
     configuration = Configuration(v=v,forced_checker=forced_checker, f=f, s=s, method=method)
     data = [
         [0, [1, 5]],
@@ -197,6 +255,7 @@ def app():
     ]
     graph = MainGraph(v=configuration.v)
     graph.create(data=data)
+
     alg = Alg(main_graph=graph, configuration=configuration)
     alg.execute()
 
