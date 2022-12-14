@@ -1,4 +1,5 @@
 from collections import defaultdict
+from graphviz import Digraph
 
 
 MINUS_PATH = -10000000
@@ -6,6 +7,19 @@ PATH_KEY = "path"
 LEN_KEY = "len"
 METHOD_LONGEST_LONGEST = "LONGEST_LONGEST"
 METHOD_ALL_LONGEST = "ALL_LONGEST"
+
+
+def get_disgraph_by_data(data, mapping_var):
+    d = Digraph()
+    
+    for k, _ in mapping_var.items():
+        d.node(f"{k}", f"{k}")
+    edges = []
+    for arr in data:
+        edges.append(f"{arr[0]}{arr[1][0]}")
+    d.edges(edges)
+    print(d.source)
+    d.render(view=True)
 
 
 class TempGraph:
@@ -258,6 +272,8 @@ def app():
 
     alg = Alg(main_graph=graph, configuration=configuration)
     alg.execute()
+
+    get_disgraph_by_data(data, graph.mapping_var)
 
 
 if __name__ == '__main__':
